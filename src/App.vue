@@ -1,12 +1,17 @@
 <template>
-  <div class="container py-4">
-    <h1 class="mb-4 text-center">Фотолист сотрудников</h1>
-    <PhotoInput />
-    <div class="my-4">
-      <PhotoSheet />
-    </div>
-    <div class="text-center">
-      <SaveButton />
+  <div class="container-fluid mt-3">
+    <div class="row">
+      <div class="col-md-4">
+        <NameInput />
+      </div>
+      <div class="col-md-8">
+        <PhotoCanvas />
+      </div>
     </div>
   </div>
 </template>
+
+<script setup>
+import NameInput from '@/components/NameInput.vue'
+import PhotoCanvas from '@/components/PhotoCanvas.vue'
+</script>
