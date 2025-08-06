@@ -3,11 +3,11 @@ import { defineStore } from 'pinia'
 
 export const useEditorStore = defineStore('editorStore', {
   state: () => ({
-    activeName: null
+    activeId: null
   }),
   actions: {
-    setActive(name) {
-      this.activeName = name
+    setActive(id) {
+      this.activeId = id
     }
   }
 })

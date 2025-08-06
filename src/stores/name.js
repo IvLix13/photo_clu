@@ -25,3 +25,17 @@ export const useNameStore = defineStore('nameStore', {
     }
   }
 })
+
+/*
+this.fetchedPhotos = []
+
+      for (const name of this.inputNames) {
+        const response = await fetch(`/api/photos/${name}`) // <-- твой бэкенд
+        const arrayBuffer = await response.arrayBuffer()
+        const base64 = arrayBufferToBase64(arrayBuffer)
+
+        this.fetchedPhotos.push({
+          name,
+          src: `data:image/jpeg;base64,${base64}`
+       */
+//приём фото с бэка

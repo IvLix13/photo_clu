@@ -22,23 +22,59 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { usePhotoStore } from '@/stores/photoStore'
 import { useEditorStore } from '@/stores/editorStore'
 
 const props = defineProps({
+  id: String,
   name: String,
   src: String,
   grayscale: Boolean,
 })
 
 const wrapper = ref(null)
-const offsetX = ref(0)
-const offsetY = ref(0)
-const scale = ref(1)
 
+const photoStore = usePhotoStore()
 const editorStore = useEditorStore()
-const isActive = computed(() => editorStore.activeName === props.name)
 
+// Проверка: активна ли сейчас эта фотка
+const isActive = computed(() => editorStore.activeId === props.id)
+
+// Получаем фото из photoStore
+const currentPhoto = computed(() =>
+  photoStore.photos.find(p => p.id === props.id)
+)
+
+// Реактивные привязки — offsetX, offsetY, scale — теперь computed
+const offsetX = computed({
+  get: () => currentPhoto.value?.offsetX ?? 0,
+  set: (val) => {
+    if (currentPhoto.value) {
+      photoStore.updatePhoto(props.id, { offsetX: val })
+    }
+  }
+})
+
+const offsetY = computed({
+  get: () => currentPhoto.value?.offsetY ?? 0,
+  set: (val) => {
+    if (currentPhoto.value) {
+      photoStore.updatePhoto(props.id, { offsetY: val })
+    }
+  }
+})
+
+const scale = computed({
+  get: () => currentPhoto.value?.scale ?? 1,
+  set: (val) => {
+    if (currentPhoto.value) {
+      photoStore.updatePhoto(props.id, { scale: val })
+    }
+  }
+})
+
+// Стили для изображения
 const imgStyle = computed(() => ({
   transform: `translate(${offsetX.value}px, ${offsetY.value}px) scale(${scale.value})`,
   left: '0',
@@ -49,11 +85,13 @@ const imgStyle = computed(() => ({
   filter: props.grayscale ? 'grayscale(100%)' : 'none'
 }))
 
+// Сделать фото активным
 const activate = () => {
-  editorStore.setActive(props.name)
+  editorStore.setActive(props.id)
   wrapper.value?.focus()
 }
 
+// Обработка клавиш
 const handleKey = (e) => {
   if (!isActive.value) return
 
@@ -71,6 +109,7 @@ const handleKey = (e) => {
   }
 }
 </script>
+
 
 <style scoped>
 .photo-wrapper {

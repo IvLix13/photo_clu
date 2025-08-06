@@ -27,9 +27,10 @@
           v-for="(photo, index) in editedPagePhotos"
           :key="index"
           class="position-absolute"
-          :style="getPhotoStyle(index)"
+          :style="{left: photo.left, top: photo.top}"
         >
           <PhotoEditor
+            :id="photo.id"
             :name="photo.caption"
             :src="photo.src"
             :grayscale="photo.grayscale"
@@ -74,36 +75,27 @@ const totalPages = computed(() => {
   return Math.ceil(nameStore.fetchedPhotos.length / 15)
 })
 
-// 📸 Фото для текущей страницы
+// 📸 Фото для текущей страницы ЗДЕСЬ ОТОБРАЖУЮТСЯ ФОТО ДЛЯ ТЕКУЩЕЙ СТРАНИЦЫ
+
+
+// 📦 Переносим в Pinia photoStore только текущие СЮДА ПЕРЕКАЧИВАЕМ ВСЕ ФОТО
+const editedPagePhotos = computed(() => photoStore.photos.filter(photo => Number(photo.page) === Number(currentPage.value)))
+console.log("currentPage.value: ", currentPage.value)
+console.log("photoPages.value: ", editedPagePhotos.value)
+
 const currentPagePhotos = computed(() => {
   const start = (currentPage.value - 1) * 15
   const end = start + 15
-  return nameStore.fetchedPhotos.slice(start, end)
+  return photoStore.fetchedPhotos.slice(start, end)
 })
 
+const pageNumber = (index) => {
+  return Math.ceil(index/15) 
+}
 
-// 📦 Переносим в Pinia photoStore только текущие
-const editedPagePhotos = computed(() => photoStore.photos)
+const allPhotos = computed(() => nameStore.fetchedPhotos ) 
+console.log(allPhotos, currentPagePhotos)
 
-// 🧠 Автоматически обновляем стор
-watch(
-  () => currentPagePhotos.value,
-  (newPhotos) => {
-    photoStore.photos = []
-    newPhotos.forEach(photo => {
-      photoStore.addPhoto({
-        src: photo.src,
-        caption: photo.name,
-        scale: 1,
-        grayscale: true,
-        rotation: 0
-      })
-    })
-  },
-  { immediate: true }
-)
-
-// 📐 Расчет позиции фото на листе
 const getPhotoStyle = (index) => {
   const col = index % cols
   const row = Math.floor(index / cols)
@@ -114,6 +106,45 @@ const getPhotoStyle = (index) => {
     top: `${top}px`
   }
 }
+
+// 🧠 Автоматически обновляем стор + вычисляем положение
+watch(
+  () => allPhotos.value,
+  (newPhotos) => {
+    photoStore.photos = []
+    let index_p = 0;
+    newPhotos.forEach((photo, index) => {
+      if (index_p >= 15) {
+        index_p = 0;
+      } 
+      console.log(index_p)
+      photoStore.addPhoto({
+        src: photo.src,
+        caption: photo.name,
+        left:getPhotoStyle(index_p).left,
+        top:getPhotoStyle(index_p).top,
+        scale: 1,
+        grayscale: true,
+        rotation: 0,
+        page:pageNumber(index+1),
+        page_index:index_p
+      })
+      index_p += 1;
+    })
+  },
+  { immediate: true }
+)
+
+
+
+//создаем переменную которая будет отвечать за отображение на листе, она дожна смотреть за номером листа и отображать те фото чей page = currentpage
+
+//нужно перетащить все фото в photostore с вычисленными left и top
+//добавить поле page, которое тоже будет вычисленно
+//а отображаем те у кого соответсвует номер выбранной страницы
+
+// 📐 Расчет позиции фото на листе
+
 
 // 📥 Скачать JPEG текущего листа
 const downloadAsJpeg = async () => {
