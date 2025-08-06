@@ -7,19 +7,21 @@ export const usePhotoStore = defineStore('photo', {
   }),
   actions: {
     addPhoto(photoData) {
-      this.photos.push({
-        id: crypto.randomUUID(),
-        src: photoData.src,
-        caption: photoData.caption || '',
-        scale: photoData.scale || 1,
-        grayscale: photoData.grayscale || false,
-        rotation: photoData.rotation || 0,
-      })
-    },
-    updatePhoto(id, newData) {
-      const photo = this.photos.find(p => p.id === id)
-      if (photo) Object.assign(photo, newData)
-    },
+  this.photos.push({
+    id: photoData.id || crypto.randomUUID(),
+    src: photoData.src,
+    caption: photoData.caption || '',
+    scale: photoData.scale || 1,
+    offsetX: photoData.offsetX || 1,
+    offsetY: photoData.offsetY || 1,
+    grayscale: photoData.grayscale || true,
+    rotation: photoData.rotation || 0,
+  })
+},
+updatePhoto(id, newData) {
+  const photo = this.photos.find(p => p.id === id)
+  if (photo) Object.assign(photo, newData)
+},
     removePhoto(id) {
       this.photos = this.photos.filter(p => p.id !== id)
     },

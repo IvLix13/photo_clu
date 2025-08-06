@@ -1,46 +1,57 @@
 <template>
   <div ref="photoref">
-  <div class="d-flex flex-column align-items-center p-2 bg-light">
-    <!-- Кнопка загрузки 
-    <button class="btn btn-primary mb-3" @click="downloadAsJpeg">
-      Скачать как JPEG
-    </button>
--->
-    <!-- A4 лист -->
-    <div
-      class="a4-sheet position-relative"
-      ref="sheetRef"
-      :style="{ width: a4Width + 'px', height: a4Height + 'px' }"
-    >
+    <div class="d-flex flex-column align-items-center p-2 bg-light">
+      <!-- 🔘 Переключение листов -->
+      <div class="mb-3">
+        <button
+          v-for="page in totalPages"
+          :key="page"
+          class="btn btn-sm mx-1"
+          :class="{
+            'btn-primary': page === currentPage,
+            'btn-outline-primary': page !== currentPage
+          }"
+          @click="currentPage = page"
+        >
+          Лист {{ page }}
+        </button>
+      </div>
+
+      <!-- 📄 Лист A4 -->
       <div
-        v-for="(photo, index) in editedPagePhotos"
-        :key="index"
-        class="position-absolute"
-        :style="getPhotoStyle(index)"
+        class="a4-sheet position-relative"
+        ref="sheetRef"
+        :style="{ width: a4Width + 'px', height: a4Height + 'px' }"
       >
-        <PhotoEditor
-          :name="photo.caption"
-          :src="photo.src"
-          :grayscale="photo.grayscale"
-        />
+        <div
+          v-for="(photo, index) in editedPagePhotos"
+          :key="index"
+          class="position-absolute"
+          :style="getPhotoStyle(index)"
+        >
+          <PhotoEditor
+            :name="photo.caption"
+            :src="photo.src"
+            :grayscale="photo.grayscale"
+          />
+        </div>
       </div>
     </div>
-  </div>
   </div>
 </template>
 
 <script setup>
-import { computed, ref, watch, provide } from 'vue'
+import { ref, computed, watch, defineExpose } from 'vue'
 import { useNameStore } from '@/stores/name'
 import { usePhotoStore } from '@/stores/photoStore'
 import PhotoEditor from './PhotoEditor.vue'
-import { toJpeg } from 'html-to-image' // 📦 npm install html-to-image
+import { toJpeg } from 'html-to-image'
 
-
-
-const store = useNameStore()
+// 📦 Сторы
+const nameStore = useNameStore()
 const photoStore = usePhotoStore()
 
+// 📐 A4 размеры
 const a4Width = 794
 const a4Height = 1123
 
@@ -49,18 +60,50 @@ const photoHeight = 151
 
 const cols = 3
 const rows = 5
-const xGap = 60
+const xGap = 100
 const yGap = 60
 
-const marginLeft = 30
+const marginLeft = 100
 const marginTop = 50
 
 const sheetRef = ref(null)
+const currentPage = ref(1)
 
-const currentPagePhotos = computed(() => store.fetchedPhotos.slice(0, 15))
+// 🔢 Всего страниц
+const totalPages = computed(() => {
+  return Math.ceil(nameStore.fetchedPhotos.length / 15)
+})
 
-const editedPagePhotos = computed(() => photoStore.photos.slice(0, 15))
+// 📸 Фото для текущей страницы
+const currentPagePhotos = computed(() => {
+  const start = (currentPage.value - 1) * 15
+  const end = start + 15
+  return nameStore.fetchedPhotos.slice(start, end)
+})
 
+
+// 📦 Переносим в Pinia photoStore только текущие
+const editedPagePhotos = computed(() => photoStore.photos)
+
+// 🧠 Автоматически обновляем стор
+watch(
+  () => currentPagePhotos.value,
+  (newPhotos) => {
+    photoStore.photos = []
+    newPhotos.forEach(photo => {
+      photoStore.addPhoto({
+        src: photo.src,
+        caption: photo.name,
+        scale: 1,
+        grayscale: true,
+        rotation: 0
+      })
+    })
+  },
+  { immediate: true }
+)
+
+// 📐 Расчет позиции фото на листе
 const getPhotoStyle = (index) => {
   const col = index % cols
   const row = Math.floor(index / cols)
@@ -72,27 +115,8 @@ const getPhotoStyle = (index) => {
   }
 }
 
-// 🔄 Сохраняем фото в стор
-watch(
-  () => currentPagePhotos.value,
-  (newPhotos) => {
-    photoStore.photos = []
-    newPhotos.forEach(photo => {
-      photoStore.addPhoto({
-        src: photo.src,
-        caption: photo.name,
-        scale: 1,
-        grayscale: false,
-        rotation: 0
-      })
-    })
-  },
-  { immediate: true }
-)
-const photoRef = ref(null)
-// 📥 Скачивание как JPEG
+// 📥 Скачать JPEG текущего листа
 const downloadAsJpeg = async () => {
-  if (photoRef) {
   const node = sheetRef.value
   if (!node) return
 
@@ -103,16 +127,15 @@ const downloadAsJpeg = async () => {
     })
 
     const link = document.createElement('a')
-    link.download = 'photo-sheet.jpeg'
+    link.download = `photo-sheet-page-${currentPage.value}.jpeg`
     link.href = dataUrl
     link.click()
   } catch (error) {
     console.error('Ошибка при скачивании JPEG:', error)
   }
 }
-}
 
-// Предоставляем метод через provide
+// 💉 Предоставляем в другие компоненты
 defineExpose({ downloadAsJpeg })
 </script>
 
